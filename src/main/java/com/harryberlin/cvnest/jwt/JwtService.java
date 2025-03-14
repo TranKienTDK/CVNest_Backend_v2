@@ -2,10 +2,7 @@ package com.harryberlin.cvnest.jwt;
 
 import com.harryberlin.cvnest.domain.User;
 import com.harryberlin.cvnest.util.constant.TokenEnum;
-import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.util.Base64;
-import com.nimbusds.jwt.JWTClaimsSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +18,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -50,7 +46,6 @@ public class JwtService {
                 .issuer("harryberlin")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plus(validityInSeconds, ChronoUnit.SECONDS))
-                .claim("user", user)
                 .claim("scope", user.getRole().name())
                 .build();
 

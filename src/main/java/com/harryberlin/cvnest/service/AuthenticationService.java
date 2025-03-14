@@ -65,8 +65,8 @@ public class AuthenticationService {
         }
         LoginResponse.UserLogin userLogin = new LoginResponse.UserLogin(
                 currentUserDB.getId(),
-                currentUserDB.getEmail(),
                 currentUserDB.getUsername(),
+                currentUserDB.getEmail(),
                 currentUserDB.getRole().name()
         );
 
