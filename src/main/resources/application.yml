@@ -14,10 +14,15 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  elasticsearch:
+    uris: http://localhost:9200
+    username: elastic
+    password: 2oJTvF-n=d0NrcntFTLH
+
   data:
     redis:
-      port: 6379
       host: localhost
+      port: 6379
 
   mail:
     host: smtp.gmail.com
