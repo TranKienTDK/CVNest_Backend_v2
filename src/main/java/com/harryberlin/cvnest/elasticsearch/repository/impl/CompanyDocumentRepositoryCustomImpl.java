@@ -1,12 +1,8 @@
 package com.harryberlin.cvnest.elasticsearch.repository.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.WildcardQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.harryberlin.cvnest.elasticsearch.document.CompanyDocument;
 import com.harryberlin.cvnest.elasticsearch.repository.CompanyDocumentRepositoryCustom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,31 +25,26 @@ public class CompanyDocumentRepositoryCustomImpl implements CompanyDocumentRepos
     private final ElasticsearchClient elasticsearchClient;
 
     @Override
-    public Page<CompanyDocument> findCompanyDocumentByQuery(String name, String address, String industry, Pageable pageable) {
+    public Page<String> findCompanyDocumentByQuery(String name, String address, String industry, Pageable pageable) {
         List<Query> mustQueries = new ArrayList<>();
 
-        if (name != null && !name.isEmpty()) {
-            WildcardQuery nameQuery = new WildcardQuery.Builder()
+        if (StringUtils.hasLength(name)) {
+            mustQueries.add(WildcardQuery.of(w -> w
                     .field("name.keyword")
-                    .value("*" + name + "*")
-                    .build();
-            mustQueries.add(new Query.Builder().wildcard(nameQuery).build());
+                    .value("*" + name + "*"))._toQuery());
         }
 
-        if (address != null && !address.isEmpty()) {
-            WildcardQuery addressQuery = new WildcardQuery.Builder()
-                    .field("address.keyword")
-                    .value("*" + address + "*")
-                    .build();
-            mustQueries.add(new Query.Builder().wildcard(addressQuery).build());
+        if (StringUtils.hasLength(address)) {
+            mustQueries.add(MatchQuery.of(m -> m
+                    .field("address")
+                    .query(address)
+                    .operator(Operator.And))._toQuery());
         }
 
-        if (industry != null && !industry.isEmpty()) {
-            MatchQuery industryQuery = new MatchQuery.Builder()
+        if (StringUtils.hasLength(industry)) {
+            mustQueries.add(TermQuery.of(t -> t
                     .field("industry.keyword")
-                    .query(industry)
-                    .build();
-            mustQueries.add(new Query.Builder().match(industryQuery).build());
+                    .value(industry))._toQuery());
         }
 
         BoolQuery boolQuery = new BoolQuery.Builder()
@@ -61,19 +53,20 @@ public class CompanyDocumentRepositoryCustomImpl implements CompanyDocumentRepos
 
         try {
             var searchResponse = this.elasticsearchClient.search(s -> s
-                    .query(q -> q.bool(boolQuery))
-                    .from(pageable.getPageNumber() * pageable.getPageSize())
-                    .size(pageable.getPageSize())
-                    .index("companies"), CompanyDocument.class);
+                            .query(q -> q.bool(boolQuery))
+                            .from(pageable.getPageNumber() * pageable.getPageSize())
+                            .size(pageable.getPageSize())
+                            .index("companies"),
+                    com.harryberlin.cvnest.elasticsearch.document.CompanyDocument.class);
 
-            List<CompanyDocument> documents = searchResponse.hits().hits().stream()
-                    .map(Hit::source)
+            List<String> companyIds = searchResponse.hits().hits().stream()
+                    .map(Hit::id)
                     .collect(Collectors.toList());
 
-            return new PageImpl<>(documents, pageable, searchResponse.hits().total().value());
+            return new PageImpl<>(companyIds, pageable, searchResponse.hits().total().value());
         } catch (IOException e) {
-            log.error(e.getMessage());
-            return Page.empty();
+            log.error("Error when searching companies: {}", e.getMessage(), e);
+            return Page.empty(pageable);
         }
     }
 }

@@ -12,5 +12,6 @@ public interface JobMapper {
     Job toEntity(JobCreateRequest request);
 
     @Mapping(target = "isActive", source = "active")
+    @Mapping(target = "companyId", source = "company.id")
     JobResponse toResponse(Job job);
 }

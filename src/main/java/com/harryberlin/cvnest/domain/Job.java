@@ -1,12 +1,17 @@
 package com.harryberlin.cvnest.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.harryberlin.cvnest.util.constant.JobContractEnum;
 import com.harryberlin.cvnest.util.constant.JobTypeEnum;
-import com.harryberlin.cvnest.util.listener.JobEntityListener;
+import com.harryberlin.cvnest.util.constant.LevelEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,7 +19,6 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(JobEntityListener.class)
 @Entity(name = "jobs")
 public class Job {
     @Id
@@ -23,20 +27,30 @@ public class Job {
     String title;
 
     @Enumerated(EnumType.STRING)
-    JobTypeEnum type;
+    JobContractEnum contract;
+
+    @Enumerated(EnumType.STRING)
+    LevelEnum level;
+
+    @Enumerated(EnumType.STRING)
+    JobTypeEnum jobType;
+
     LocalDate startDate;
     LocalDate endDate;
     boolean isActive;
 
-    @Column(columnDefinition = "MEDIUMTEXT")
+    @Lob
     String description;
     String experienceYear;
-    Long startSalary;
-    Long endSalary;
+    BigDecimal salary;
 
     @ManyToOne
     @JoinColumn(name = "company_id")
+    @JsonIgnore
     Company company;
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JsonIgnoreProperties(value = { "jobs" })
+    List<Skill> skills;
 
 }

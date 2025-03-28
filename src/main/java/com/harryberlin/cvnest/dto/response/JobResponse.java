@@ -1,9 +1,12 @@
 package com.harryberlin.cvnest.dto.response;
 
+import com.harryberlin.cvnest.domain.Skill;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,13 +17,15 @@ import java.time.LocalDate;
 public class JobResponse {
     String id;
     String title;
-    String type;
+    String contract;
+    String jobType;
+    String level;
     LocalDate startDate;
     LocalDate endDate;
     boolean isActive;
     String experienceYear;
     String description;
-    Long startSalary;
-    Long endSalary;
+    BigDecimal salary;
     String companyId;
+    List<String> skillNames;
 }

@@ -9,12 +9,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CompanyResponse {
+public class SkillResponse {
     String id;
-    String address;
     String name;
-    String website;
-    String avatar;
-    String description;
-    String industry;
 }

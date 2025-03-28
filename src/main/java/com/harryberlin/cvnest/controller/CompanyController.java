@@ -25,7 +25,7 @@ public class CompanyController {
     CompanyService companyService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse<CompanyResponse> createCompany(@RequestBody CompanyCreateRequest request) {
         return ApiResponse.<CompanyResponse>builder()
                 .statusCode(HttpStatus.CREATED.value())
@@ -56,7 +56,7 @@ public class CompanyController {
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse<CompanyResponse> updateCompany(@RequestBody CompanyUpdateRequest request) {
         return ApiResponse.<CompanyResponse>builder()
                 .statusCode(HttpStatus.OK.value())
@@ -66,7 +66,7 @@ public class CompanyController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse<String> deleteCompany(@PathVariable String id) {
         this.companyService.deleteCompany(id);
         return ApiResponse.<String>builder()

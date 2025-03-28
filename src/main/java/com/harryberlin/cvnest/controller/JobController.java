@@ -8,6 +8,11 @@ import com.harryberlin.cvnest.service.JobService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +26,7 @@ public class JobController {
     JobService jobService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse<JobResponse> createJob(@RequestBody JobCreateRequest request) {
         return ApiResponse.<JobResponse>builder()
                 .statusCode(201)
@@ -31,11 +36,14 @@ public class JobController {
     }
 
     @GetMapping
-    public ApiResponse<List<JobResponse>> getAllJobs() {
-        return ApiResponse.<List<JobResponse>>builder()
+    public ApiResponse<PagedModel<EntityModel<JobResponse>>> getAllJobs(Pageable pageable,
+                                                                        PagedResourcesAssembler<JobResponse> assembler) {
+        Page<JobResponse> jobsPage = this.jobService.getAllJob(pageable);
+        PagedModel<EntityModel<JobResponse>> pageModel = assembler.toModel(jobsPage);
+        return ApiResponse.<PagedModel<EntityModel<JobResponse>>>builder()
                 .statusCode(200)
                 .message("Lấy danh sách công việc thành công")
-                .data(this.jobService.getAllJob())
+                .data(pageModel)
                 .build();
     }
 
@@ -49,7 +57,7 @@ public class JobController {
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse<JobResponse> updateJob(@RequestBody JobUpdateRequest request) {
         return ApiResponse.<JobResponse>builder()
                 .statusCode(200)
@@ -59,13 +67,35 @@ public class JobController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse<Void> deleteJob(@PathVariable String id) {
         this.jobService.deleteJob(id);
         return ApiResponse.<Void>builder()
                 .statusCode(200)
                 .message("Xóa công việc thành công")
                 .data(null)
+                .build();
+    }
+
+    @GetMapping("/search")
+    public ApiResponse<PagedModel<EntityModel<JobResponse>>> searchJobs(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String contract,
+            @RequestParam(required = false) String jobType,
+            @RequestParam(required = false) String salaryRange,
+            @RequestParam(required = false) String experienceYear,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) List<String> skillIds,
+            Pageable pageable, PagedResourcesAssembler<JobResponse> assembler) {
+        Page<JobResponse> jobsPage = this.jobService.searchJobs(
+                title, contract, jobType, salaryRange, experienceYear, level, skillIds, pageable);
+
+        PagedModel<EntityModel<JobResponse>> pageModel = assembler.toModel(jobsPage);
+
+        return ApiResponse.<PagedModel<EntityModel<JobResponse>>>builder()
+                .statusCode(200)
+                .message("Tìm kiếm công việc thành công")
+                .data(pageModel)
                 .build();
     }
 }

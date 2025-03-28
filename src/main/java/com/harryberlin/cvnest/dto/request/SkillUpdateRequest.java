@@ -1,4 +1,4 @@
-package com.harryberlin.cvnest.dto.response;
+package com.harryberlin.cvnest.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -9,12 +9,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CompanyResponse {
+public class SkillUpdateRequest {
     String id;
-    String address;
     String name;
-    String website;
-    String avatar;
-    String description;
-    String industry;
 }

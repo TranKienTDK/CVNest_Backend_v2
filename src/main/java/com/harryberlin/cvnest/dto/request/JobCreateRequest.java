@@ -1,7 +1,13 @@
 package com.harryberlin.cvnest.dto.request;
 
+import com.harryberlin.cvnest.util.constant.JobContractEnum;
+import com.harryberlin.cvnest.util.constant.JobTypeEnum;
+import com.harryberlin.cvnest.util.constant.LevelEnum;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -11,12 +17,14 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JobCreateRequest {
     String title;
-    String type;
+    JobContractEnum contract;
+    JobTypeEnum jobType;
+    LevelEnum level;
     String startDate;
     String endDate;
     String experienceYear;
     String description;
-    Long startSalary;
-    Long endSalary;
+    BigDecimal salary;
     String companyId;
+    List<String> skillIds;
 }

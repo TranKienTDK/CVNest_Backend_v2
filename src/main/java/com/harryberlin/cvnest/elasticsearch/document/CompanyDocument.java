@@ -9,6 +9,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,13 +22,11 @@ import org.springframework.data.elasticsearch.annotations.Document;
 public class CompanyDocument {
     @Id
     String id;
-
     String name;
     String address;
-    String website;
-    String avatar;
-    String description;
 
     @Enumerated(EnumType.STRING)
     IndustryEnum industry;
+
+    List<String> jobIds;
 }
