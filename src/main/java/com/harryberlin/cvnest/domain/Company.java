@@ -1,7 +1,6 @@
 package com.harryberlin.cvnest.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.harryberlin.cvnest.util.constant.IndustryEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -27,9 +26,7 @@ public class Company {
     @Lob
     String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    IndustryEnum industry;
+    String industry;
 
     @OneToMany(mappedBy = "company", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore

@@ -1,9 +1,6 @@
 package com.harryberlin.cvnest.elasticsearch.document;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.harryberlin.cvnest.util.constant.IndustryEnum;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.annotation.Id;
@@ -25,8 +22,7 @@ public class CompanyDocument {
     String name;
     String address;
 
-    @Enumerated(EnumType.STRING)
-    IndustryEnum industry;
+    String industry;
 
     List<String> jobIds;
 }

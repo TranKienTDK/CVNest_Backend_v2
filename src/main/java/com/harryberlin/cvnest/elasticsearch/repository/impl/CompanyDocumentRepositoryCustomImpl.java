@@ -42,9 +42,12 @@ public class CompanyDocumentRepositoryCustomImpl implements CompanyDocumentRepos
         }
 
         if (StringUtils.hasLength(industry)) {
-            mustQueries.add(TermQuery.of(t -> t
-                    .field("industry.keyword")
-                    .value(industry))._toQuery());
+            String[] industryOptions = industry.split(",\\s*");
+            for (String option : industryOptions) {
+                mustQueries.add(MatchQuery.of(m -> m
+                        .field("industry")
+                        .query(option))._toQuery());
+            }
         }
 
         BoolQuery boolQuery = new BoolQuery.Builder()
