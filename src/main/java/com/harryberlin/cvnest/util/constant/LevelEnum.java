@@ -5,5 +5,7 @@ public enum LevelEnum {
     FRESHER,
     JUNIOR,
     MIDDLE,
-    SENIOR
+    SENIOR,
+    DEPARTMENT_MANAGER,
+    LEADER
 }

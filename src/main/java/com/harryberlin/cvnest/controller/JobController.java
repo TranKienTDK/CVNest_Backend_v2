@@ -16,6 +16,7 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -96,6 +97,17 @@ public class JobController {
                 .statusCode(200)
                 .message("Tìm kiếm công việc thành công")
                 .data(pageModel)
+                .build();
+    }
+
+    // IMPORT DATA FROM JSON
+    @GetMapping("/import")
+    public ApiResponse<String> importData() throws IOException {
+        this.jobService.importJobsFromJson();
+        return ApiResponse.<String>builder()
+                .statusCode(200)
+                .message("Import dữ liệu công việc thành công")
+                .data(null)
                 .build();
     }
 }

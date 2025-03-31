@@ -1,8 +1,11 @@
 package com.harryberlin.cvnest.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.harryberlin.cvnest.domain.Company;
 import com.harryberlin.cvnest.domain.Job;
 import com.harryberlin.cvnest.domain.Skill;
+import com.harryberlin.cvnest.dto.request.JobCreateImportRequest;
 import com.harryberlin.cvnest.dto.request.JobCreateRequest;
 import com.harryberlin.cvnest.dto.request.JobUpdateRequest;
 import com.harryberlin.cvnest.dto.response.JobResponse;
@@ -10,6 +13,7 @@ import com.harryberlin.cvnest.elasticsearch.repository.impl.JobDocumentRepositor
 import com.harryberlin.cvnest.event.company.UpdateCompanyEvent;
 import com.harryberlin.cvnest.event.job.CreateJobEvent;
 import com.harryberlin.cvnest.event.job.DeleteJobEvent;
+import com.harryberlin.cvnest.event.job.ImportJobsEvent;
 import com.harryberlin.cvnest.event.job.UpdateJobEvent;
 import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.mapper.job.JobMapper;
@@ -22,12 +26,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +53,7 @@ public class JobService {
     CompanyRepository companyRepository;
     JobDocumentRepositoryCustomImpl jobDocumentRepositoryCustom;
 
+    private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public JobResponse createJob(JobCreateRequest request) {
@@ -152,6 +161,40 @@ public class JobService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(jobResponses, pageable, jobIdsPage.getTotalElements());
+    }
+
+    // IMPORT DATA FROM JSON
+    @Transactional
+    public void importJobsFromJson() throws IOException {
+        Resource resource = new ClassPathResource("data/jobs.json");
+        List<JobCreateImportRequest> jobRequestList = this.objectMapper.readValue(resource.getFile(),
+                new TypeReference<List<JobCreateImportRequest>>() {});
+
+        List<String> jobIds = new ArrayList<>();
+
+        for (JobCreateImportRequest request : jobRequestList) {
+            // Check company exists or not
+            Company company = companyRepository.findById(request.getCompanyId())
+                    .orElseThrow(() -> new BaseException(Error.COMPANY_NOT_FOUND));
+
+            // Insert skills if not exist
+            List<Skill> skills = request.getSkills().stream()
+                    .map(skillName -> this.skillRepository.findByName(skillName)
+                            .orElseGet(() -> this.skillRepository.save(new Skill(skillName))))
+                    .toList();
+
+            // Create job and save to DB
+            Job job = this.jobMapper.toEntityImport(request);
+            job.setSkills(skills);
+            job.setCompany(company);
+            this.jobRepository.save(job);
+            jobIds.add(job.getId());
+        }
+
+        if (!jobIds.isEmpty()) {
+            ImportJobsEvent event = new ImportJobsEvent(jobIds);
+            this.applicationEventPublisher.publishEvent(event);
+        }
     }
 
 }

@@ -6,6 +6,7 @@ import com.harryberlin.cvnest.elasticsearch.document.CompanyDocument;
 import com.harryberlin.cvnest.elasticsearch.repository.CompanyDocumentRepository;
 import com.harryberlin.cvnest.event.company.CreateCompanyEvent;
 import com.harryberlin.cvnest.event.company.DeleteCompanyEvent;
+import com.harryberlin.cvnest.event.company.ImportCompanyListEvent;
 import com.harryberlin.cvnest.event.company.UpdateCompanyEvent;
 import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.repository.CompanyRepository;
@@ -15,7 +16,11 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +39,9 @@ public class CompanyIndexES {
                 .name(company.getName())
                 .address(company.getAddress())
                 .industry(company.getIndustry())
-                .jobIds(company.getJobs().stream().map(Job::getId).collect(Collectors.toList()))
+                .jobIds(company.getJobs().stream()
+                        .map(Job::getId)
+                        .collect(toList()))
                 .build();
 
         this.companyDocumentRepository.save(companyDocument);
@@ -52,7 +59,7 @@ public class CompanyIndexES {
         companyDocument.setName(company.getName());
         companyDocument.setAddress(company.getAddress());
         companyDocument.setIndustry(company.getIndustry());
-        companyDocument.setJobIds(company.getJobs().stream().map(Job::getId).collect(Collectors.toList()));
+        companyDocument.setJobIds(company.getJobs().stream().map(Job::getId).collect(toList()));
 
         this.companyDocumentRepository.save(companyDocument);
     }
@@ -64,5 +71,31 @@ public class CompanyIndexES {
                 .orElseThrow(() -> new BaseException(Error.COMPANY_NOT_FOUND));
 
         this.companyDocumentRepository.delete(companyDocument);
+    }
+
+    @EventListener(ImportCompanyListEvent.class)
+    public void importIndex(ImportCompanyListEvent event) {
+        List<CreateCompanyEvent> events = event.getEvents();
+        List<String> companyIds = events.stream()
+                .map(CreateCompanyEvent::getId)
+                .toList();
+
+        List<Company> companies = this.companyRepository.findAllById(companyIds);
+
+        List<CompanyDocument> companyDocumentList = companies.stream()
+                .map(company -> CompanyDocument.builder()
+                        .id(company.getId())
+                        .name(company.getName())
+                        .address(company.getAddress())
+                        .industry(company.getIndustry())
+                        .jobIds(Optional.ofNullable(company.getJobs())
+                                .orElse(Collections.emptyList())
+                                .stream()
+                                .map(Job::getId)
+                                .collect(toList()))
+                        .build())
+                .toList();
+
+        this.companyDocumentRepository.saveAll(companyDocumentList);
     }
 }

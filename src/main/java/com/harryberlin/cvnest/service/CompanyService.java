@@ -1,11 +1,15 @@
 package com.harryberlin.cvnest.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.harryberlin.cvnest.domain.Company;
 import com.harryberlin.cvnest.dto.request.CompanyCreateRequest;
 import com.harryberlin.cvnest.dto.request.CompanyUpdateRequest;
 import com.harryberlin.cvnest.dto.response.CompanyResponse;
 import com.harryberlin.cvnest.elasticsearch.repository.CompanyDocumentRepository;
 import com.harryberlin.cvnest.event.company.CreateCompanyEvent;
+import com.harryberlin.cvnest.event.company.DeleteCompanyEvent;
+import com.harryberlin.cvnest.event.company.ImportCompanyListEvent;
 import com.harryberlin.cvnest.event.company.UpdateCompanyEvent;
 import com.harryberlin.cvnest.event.job.DeleteJobEvent;
 import com.harryberlin.cvnest.exception.BaseException;
@@ -17,12 +21,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +45,7 @@ public class CompanyService {
     CompanyRepository companyRepository;
     CompanyDocumentRepository companyDocumentRepository;
 
+    private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public CompanyResponse createCompany(CompanyCreateRequest request) {
@@ -86,9 +94,14 @@ public class CompanyService {
         if (company.getJobs() != null && !company.getJobs().isEmpty()) {
             company.getJobs().forEach(job -> {
                 DeleteJobEvent jobEvent = new DeleteJobEvent(job.getId());
-                applicationEventPublisher.publishEvent(jobEvent);
+                this.applicationEventPublisher.publishEvent(jobEvent);
             });
         }
+
+        this.companyRepository.deleteById(id);
+
+        DeleteCompanyEvent companyEvent = new DeleteCompanyEvent(id);
+        this.applicationEventPublisher.publishEvent(companyEvent);
     }
 
     // ELASTIC SEARCH
@@ -112,5 +125,26 @@ public class CompanyService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(companyResponses, pageable, companyIdsPage.getTotalElements());
+    }
+
+    // IMPORT DATA FROM JSON
+    @Transactional
+    public void importCompaniesFromJson() throws IOException {
+        Resource resource = new ClassPathResource("data/companies.json");
+
+        List<CompanyCreateRequest> companyRequestList = this.objectMapper.readValue(resource.getFile(),
+                new TypeReference<List<CompanyCreateRequest>>() {});
+
+        List<Company> companyList = companyRequestList.stream()
+                .map(this.companyMapper::toEntity)
+                .toList();
+
+        List<Company> savedCompanies = this.companyRepository.saveAll(companyList);
+        List<CreateCompanyEvent> events = savedCompanies.stream()
+                .map(company -> new CreateCompanyEvent(company.getId()))
+                .toList();
+
+        ImportCompanyListEvent event = new ImportCompanyListEvent(events);
+        this.applicationEventPublisher.publishEvent(event);
     }
 }

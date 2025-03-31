@@ -21,6 +21,8 @@ public class Company {
     String name;
     String address;
     String website;
+
+    @Column(columnDefinition = "MEDIUMTEXT")
     String avatar;
 
     @Lob

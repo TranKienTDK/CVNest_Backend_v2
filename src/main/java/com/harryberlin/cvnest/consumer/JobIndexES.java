@@ -8,6 +8,7 @@ import com.harryberlin.cvnest.elasticsearch.repository.CompanyDocumentRepository
 import com.harryberlin.cvnest.elasticsearch.repository.JobDocumentRepository;
 import com.harryberlin.cvnest.event.job.CreateJobEvent;
 import com.harryberlin.cvnest.event.job.DeleteJobEvent;
+import com.harryberlin.cvnest.event.job.ImportJobsEvent;
 import com.harryberlin.cvnest.event.job.UpdateJobEvent;
 import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.repository.JobRepository;
@@ -99,5 +100,28 @@ public class JobIndexES {
             companyDocument.setJobIds(updatedJobIds);
             this.companyDocumentRepository.save(companyDocument);
         }
+    }
+
+    @EventListener(classes = ImportJobsEvent.class)
+    public void importJobListToES(ImportJobsEvent event) {
+        List<String> jobIds = event.getJobIds();
+
+        List<Job> jobList = this.jobRepository.findAllById(jobIds);
+
+        List<JobDocument> jobDocuments = jobList.stream()
+                .map(job -> JobDocument.builder()
+                        .id(job.getId())
+                        .title(job.getTitle())
+                        .contract(job.getContract())
+                        .jobType(job.getJobType())
+                        .salary(job.getSalary())
+                        .experienceYear(job.getExperienceYear())
+                        .level(job.getLevel())
+                        .skillIds(job.getSkills().stream().map(Skill::getId).toList())
+                        .companyId(job.getCompany().getId())
+                        .build())
+                .toList();
+
+        this.jobDocumentRepository.saveAll(jobDocuments);
     }
 }

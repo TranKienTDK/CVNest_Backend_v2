@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/company")
 @RequiredArgsConstructor
@@ -89,5 +91,25 @@ public class CompanyController {
                 .message("Tìm kiếm công ty thành công")
                 .data(pagedModel)
                 .build();
+    }
+
+    // IMPORT DATA FROM JSON FILE
+    @GetMapping("/import")
+    public ApiResponse<Void> importData() {
+        try {
+            this.companyService.importCompaniesFromJson();
+            return ApiResponse.<Void>builder()
+                    .statusCode(HttpStatus.OK.value())
+                    .message("Import dữ liệu thành công")
+                    .data(null)
+                    .build();
+        } catch (IOException e) {
+            return ApiResponse.<Void>builder()
+                    .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .message("Import dữ liệu thất bại")
+                    .error(e.getMessage())
+                    .data(null)
+                    .build();
+        }
     }
 }
