@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -26,4 +28,6 @@ public class User {
     @Column(columnDefinition = "MEDIUMTEXT")
     String refreshToken;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    List<CV> cvs;
 }

@@ -132,6 +132,9 @@ public class JobDocumentRepositoryCustomImpl implements JobDocumentRepositoryCus
             case "Từ 7.000.000 đ" -> new BigDecimal(7000000);
             case "Từ 10.000.000 đ" -> new BigDecimal(10000000);
             case "Từ 15.000.000 đ" -> new BigDecimal(15000000);
+            case "Từ 20.000.000 đ" -> new BigDecimal(20000000);
+            case "Từ 30.000.000 đ" -> new BigDecimal(30000000);
+            case "Từ 50.000.000 đ" -> new BigDecimal(50000000);
             default -> null;
         };
     }

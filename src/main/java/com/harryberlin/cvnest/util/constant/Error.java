@@ -13,4 +13,11 @@ public class Error {
 
     public static final String SKILL_ALREADY_EXISTED = "Skill already exists";
     public static final String SKILL_NOT_FOUND = "Skill not found";
+
+    public static final String CV_NOT_FOUND = "CV not found";
+    public static final String NOT_AUTHORIZED = "Not authorize";
+
+    public static final String EXPERIENCE_REQUIRED = "Experience required";
+    public static final String SKILL_REQUIRED = "Skill required";
+    public static final String EDUCATION_REQUIRED = "Education required";
 }
