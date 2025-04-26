@@ -28,6 +28,15 @@ public class User {
     @Column(columnDefinition = "MEDIUMTEXT")
     String refreshToken;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     List<CV> cvs;
+
+    public void deleteCV(String id) {
+        var cv = this.cvs.stream()
+                .filter(c -> c.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("CV not found"));
+        cv.setUser(null);
+        this.cvs.remove(cv);
+    }
 }

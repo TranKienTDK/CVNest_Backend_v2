@@ -1,6 +1,7 @@
 package com.harryberlin.cvnest.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.harryberlin.cvnest.util.constant.GenderEnum;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,7 +39,7 @@ public class Info {
 
     @OneToOne
     @JoinColumn(name = "cv_id")
-    @JsonBackReference
+    @JsonIgnore
     CV cv;
 
 }

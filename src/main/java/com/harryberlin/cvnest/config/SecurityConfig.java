@@ -46,7 +46,8 @@ public class SecurityConfig {
             "/auth/refresh",
             "/auth/forgot-password",
             "/auth/verify-forgot-password",
-            "/auth/reset-password"
+            "/auth/reset-password",
+            "/debug/clean-description",
     };
 
 

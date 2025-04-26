@@ -1,6 +1,7 @@
 package com.harryberlin.cvnest.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -11,10 +12,10 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "experiences")
-public class Experience {
+public class Experience implements BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
@@ -31,6 +32,6 @@ public class Experience {
 
     @ManyToOne
     @JoinColumn(name = "cv_id")
-    @JsonBackReference
+    @JsonIgnore
     CV cv;
 }

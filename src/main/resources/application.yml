@@ -41,3 +41,9 @@ jwt:
   access-token-validity-in-seconds: 86400
   refresh-token-validity-in-seconds: 864000
 
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+

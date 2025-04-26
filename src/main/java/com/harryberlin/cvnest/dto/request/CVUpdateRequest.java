@@ -35,7 +35,6 @@ public class CVUpdateRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    @Builder
     public static class InfoUpdateRequest {
         private String id;
         private String fullName;
@@ -56,8 +55,7 @@ public class CVUpdateRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    @Builder
-    public static class ExperienceUpdateRequest {
+    public static class ExperienceUpdateRequest implements BaseRequest {
         private String id;
         private String company;
         private String position;
@@ -71,8 +69,7 @@ public class CVUpdateRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    @Builder
-    public static class EducationUpdateRequest {
+    public static class EducationUpdateRequest implements BaseRequest{
         private String id;
         private String school;
         private String field;
@@ -85,8 +82,7 @@ public class CVUpdateRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    @Builder
-    public static class SkillCVUpdateRequest {
+    public static class SkillCVUpdateRequest implements BaseRequest {
         private String id;
         private String skill;
         private int rate;
@@ -96,8 +92,7 @@ public class CVUpdateRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    @Builder
-    public static class LanguageUpdateRequest {
+    public static class LanguageUpdateRequest implements BaseRequest {
         private String id;
         private String language;
         private LevelLanguageEnum level;
@@ -108,7 +103,7 @@ public class CVUpdateRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class ProjectUpdateRequest {
+    public static class ProjectUpdateRequest implements BaseRequest {
         private String id;
         private String project;
         private String description;
@@ -121,7 +116,7 @@ public class CVUpdateRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class InterestUpdateRequest {
+    public static class InterestUpdateRequest implements BaseRequest {
         private String id;
         private String interest;
     }
@@ -131,7 +126,7 @@ public class CVUpdateRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class ConsultantUpdateRequest {
+    public static class ConsultantUpdateRequest implements BaseRequest {
         private String id;
         private String name;
         private String email;
@@ -143,8 +138,7 @@ public class CVUpdateRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    @Builder
-    public static class ActivityUpdateRequest {
+    public static class ActivityUpdateRequest implements BaseRequest {
         private String id;
         private String activity;
         private String description;
@@ -156,11 +150,14 @@ public class CVUpdateRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    @Builder
-    public static class CertificateUpdateRequest {
+    public static class CertificateUpdateRequest implements BaseRequest {
         private String id;
         private String certificate;
         private String description;
         private LocalDate date;
+    }
+
+    public interface BaseRequest {
+        String getId();
     }
 }

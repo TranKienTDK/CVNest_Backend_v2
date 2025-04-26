@@ -11,7 +11,6 @@ import com.harryberlin.cvnest.service.UserService;
 import com.harryberlin.cvnest.util.constant.Error;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -61,19 +60,14 @@ public class CVController {
 
     @GetMapping
     public ApiResponse<Page<CV>> getAllCVsByUser(
-            @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        Pageable adjustedPageable = PageRequest.of(
-                Math.max(0, pageable.getPageNumber() - 1),
-                pageable.getPageSize(),
-                pageable.getSort()
-        );
+            @PageableDefault(size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = this.userService.handleGetUserByEmail(email);
         if (user == null) {
             throw new BaseException(Error.USER_NOT_FOUND);
         }
-        Page<CV> cvs = this.cvService.getAllCVsByUser(user, adjustedPageable);
+        Page<CV> cvs = this.cvService.getAllCVsByUser(user, pageable);
         return ApiResponse.<Page<CV>>builder()
                 .statusCode(200)
                 .message("Get all CVs successfully")
@@ -105,7 +99,7 @@ public class CVController {
         if (user == null) {
             throw new BaseException(Error.USER_NOT_FOUND);
         }
-        this.cvService.deleteCV(cvId, user);
+        this.cvService.deleteCVById(cvId);
         return ApiResponse.<Void>builder()
                 .statusCode(200)
                 .message("CV deleted successfully")

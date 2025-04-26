@@ -1,6 +1,7 @@
 package com.harryberlin.cvnest.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -12,7 +13,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "interests")
-public class Interest {
+public class Interest implements BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
@@ -21,6 +22,6 @@ public class Interest {
 
     @ManyToOne
     @JoinColumn(name = "cv_id")
-    @JsonBackReference
+    @JsonIgnore
     CV cv;
 }

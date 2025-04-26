@@ -35,10 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -195,6 +192,36 @@ public class JobService {
             ImportJobsEvent event = new ImportJobsEvent(jobIds);
             this.applicationEventPublisher.publishEvent(event);
         }
+    }
+
+    // Clean duplicate description
+    @Transactional
+    public void cleanDuplicateDescription() {
+        List<Job> jobs = this.jobRepository.findAll();
+        for (Job job : jobs) {
+            String original = job.getDescription();
+            if (original == null || original.isBlank()) continue;
+            String cleaned = removeDuplicateDescription(original);
+
+            if (!original.equals(cleaned)) {
+                job.setDescription(cleaned);
+                this.jobRepository.save(job);
+            }
+        }
+    }
+
+    private String removeDuplicateDescription(String input) {
+        String[] lines = input.split("\\r?\\n");
+        Set<String> seen = new LinkedHashSet<>();
+
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) {
+                seen.add(trimmed);
+            }
+        }
+
+        return String.join("\n", seen);
     }
 
 }
