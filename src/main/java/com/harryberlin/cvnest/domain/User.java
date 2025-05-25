@@ -1,10 +1,12 @@
 package com.harryberlin.cvnest.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.harryberlin.cvnest.util.constant.RoleEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -22,6 +24,10 @@ public class User {
     String email;
     String password;
 
+    String avatar;
+    String phone;
+    LocalDate dateOfBirth;
+
     @Enumerated(EnumType.STRING)
     RoleEnum role;
 
@@ -30,6 +36,11 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     List<CV> cvs;
+
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    @JsonIgnore
+    Company company;
 
     public void deleteCV(String id) {
         var cv = this.cvs.stream()

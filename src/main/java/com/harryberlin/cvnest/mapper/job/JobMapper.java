@@ -15,7 +15,6 @@ public interface JobMapper {
     @Mapping(target = "skills", ignore = true)
     Job toEntityImport(JobCreateImportRequest request);
 
-    @Mapping(target = "isActive", source = "active")
     @Mapping(target = "companyId", source = "company.id")
     JobResponse toResponse(Job job);
 }

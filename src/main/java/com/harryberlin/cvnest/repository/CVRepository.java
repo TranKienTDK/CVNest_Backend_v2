@@ -7,10 +7,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface CVRepository extends JpaRepository<CV, String> {
     Page<CV> findByUser(User user, Pageable pageable);
     Optional<CV> findByIdAndUser(String id, User user);
+    List<CV> findByUserId(String userId);
 }

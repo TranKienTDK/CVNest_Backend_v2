@@ -27,7 +27,7 @@ public class JobController {
     JobService jobService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     public ApiResponse<JobResponse> createJob(@RequestBody JobCreateRequest request) {
         return ApiResponse.<JobResponse>builder()
                 .statusCode(201)
@@ -58,7 +58,7 @@ public class JobController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     public ApiResponse<JobResponse> updateJob(@RequestBody JobUpdateRequest request) {
         return ApiResponse.<JobResponse>builder()
                 .statusCode(200)
@@ -108,6 +108,24 @@ public class JobController {
                 .statusCode(200)
                 .message("Import dữ liệu công việc thành công")
                 .data(null)
+                .build();
+    }
+
+    @GetMapping("/{companyId}/jobs")
+    public ApiResponse<List<JobResponse>> getJobsByCompanyId(@PathVariable String companyId) {
+        return ApiResponse.<List<JobResponse>>builder()
+                .statusCode(200)
+                .message("Get list of jobs by company id")
+                .data(this.jobService.getListJobByCompanyId(companyId))
+                .build();
+    }
+
+    @GetMapping("hr/jobs/{hrId}")
+    public ApiResponse<List<JobResponse>> getJobByHrId(@PathVariable String hrId) {
+        return ApiResponse.<List<JobResponse>>builder()
+                .statusCode(200)
+                .message("Get job by HR id")
+                .data(this.jobService.getListJobByHR(hrId))
                 .build();
     }
 }

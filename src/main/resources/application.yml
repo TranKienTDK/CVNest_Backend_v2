@@ -17,7 +17,7 @@ spring:
   elasticsearch:
     uris: http://localhost:9200
     username: elastic
-    password: 2oJTvF-n=d0NrcntFTLH
+    password: elastic
 
   data:
     redis:
@@ -38,7 +38,7 @@ spring:
 
 jwt:
   signerKey: "qoAEABDke07+AVLepXB4aCMtsT0wMAqR5x2VFyldsnx6e75YQkJH2UcZKTjEyoNgG71SBCXfq5N6NVZxWOfsHQ=="
-  access-token-validity-in-seconds: 86400
+  access-token-validity-in-seconds: 864000
   refresh-token-validity-in-seconds: 864000
 
 logging:
@@ -46,4 +46,9 @@ logging:
     org:
       hibernate:
         SQL: DEBUG
+
+cloudinary:
+  cloud-name: dcpz6bqyl
+  api-key: 832475981822277
+  api-secret: 0hn_kdhvvll9Iaw-8dijdJ4xYZQ
 

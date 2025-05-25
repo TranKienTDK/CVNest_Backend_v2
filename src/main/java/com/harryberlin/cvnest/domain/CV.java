@@ -2,9 +2,8 @@ package com.harryberlin.cvnest.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.*;
@@ -88,14 +87,4 @@ public class CV {
 
     @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     List<Consultant> consultants;
-
-//    @PrePersist
-//    public void handleBeforeCreate() {
-//        this.createdAt = LocalDateTime.now();
-//    }
-//
-//    @PostUpdate
-//    public void handleBeforeUpdate() {
-//        this.updatedAt = LocalDateTime.now();
-//    }
 }

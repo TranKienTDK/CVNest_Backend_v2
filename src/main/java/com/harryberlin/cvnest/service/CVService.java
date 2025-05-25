@@ -9,6 +9,7 @@ import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.repository.CVRepository;
 import com.harryberlin.cvnest.repository.UserRepository;
 import com.harryberlin.cvnest.util.constant.Error;
+import com.harryberlin.cvnest.util.constant.RoleEnum;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +88,11 @@ public class CVService {
 
     public CV getCVByIdAndUser(String cvId, User user) {
         log.info("Retrieving CV with ID: {} for user: {}", cvId, user.getId());
+
+        if (user.getRole().equals(RoleEnum.HR)) {
+            return this.cvRepository.findById(cvId)
+                    .orElseThrow(() -> new BaseException(Error.CV_NOT_FOUND));
+        }
 
         return this.cvRepository.findByIdAndUser(cvId, user)
                 .orElseThrow(() -> new BaseException(Error.CV_NOT_FOUND));
@@ -412,6 +418,11 @@ public class CVService {
     private void updateConsultants(CV cv, List<ConsultantUpdateRequest> requests) {
         var updateConsultantModal = new UpdateConsultantModal(cv.getConsultants(), requests, cv);
         cv.setConsultants(updateConsultantModal.handleRequests());
+    }
+
+    public List<CV> getAllCVs() {
+        log.info("Retrieving all CVs");
+        return this.cvRepository.findAll();
     }
 
     private record UpdateCVModal<T>(List<T> addItems, Map<String, T> updateItems) {

@@ -12,6 +12,7 @@ import com.harryberlin.cvnest.jwt.JwtService;
 import com.harryberlin.cvnest.mapper.register.RegisterMapper;
 import com.harryberlin.cvnest.repository.UserRepository;
 import com.harryberlin.cvnest.util.constant.Error;
+import com.harryberlin.cvnest.util.constant.RoleEnum;
 import com.harryberlin.cvnest.util.constant.TokenEnum;
 import jakarta.mail.MessagingException;
 import lombok.AccessLevel;
@@ -48,7 +49,9 @@ public class AuthenticationService {
             throw new BaseException(Error.USER_ALREADY_EXISTS);
         }
         request.setPassword(passwordEncoder.encode(request.getPassword()));
-        return registerMapper.toResponse(userRepository.save(registerMapper.toEntity(request)));
+        User newUser = this.registerMapper.toEntity(request);
+        newUser.setRole(RoleEnum.USER);
+        return registerMapper.toResponse(userRepository.save(newUser));
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -67,6 +70,8 @@ public class AuthenticationService {
                 currentUserDB.getId(),
                 currentUserDB.getUsername(),
                 currentUserDB.getEmail(),
+                currentUserDB.getAvatar(),
+                currentUserDB.getPhone(),
                 currentUserDB.getRole().name()
         );
 
@@ -116,7 +121,6 @@ public class AuthenticationService {
     public LoginResponse refreshToken(String refreshToken) {
         Jwt decodeToken = this.jwtService.checkValidRefreshToken(refreshToken);
         String email = decodeToken.getSubject();
-
         User currentUser = this.userService.getUserByRefreshTokenAndEmail(refreshToken, email);
         if (currentUser == null) {
             throw new BaseException(Error.REFRESH_TOKEN_INVALID);
@@ -130,6 +134,8 @@ public class AuthenticationService {
                 currentUserDB.getId(),
                 currentUserDB.getEmail(),
                 currentUserDB.getUsername(),
+                currentUserDB.getAvatar(),
+                currentUserDB.getPhone(),
                 currentUserDB.getRole().name()
         );
 

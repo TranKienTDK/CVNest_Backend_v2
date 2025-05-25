@@ -18,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/cv")
 @RequiredArgsConstructor
@@ -103,6 +105,22 @@ public class CVController {
         return ApiResponse.<Void>builder()
                 .statusCode(200)
                 .message("CV deleted successfully")
+                .build();
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<List<CV>> getAllCVs() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = this.userService.handleGetUserByEmail(email);
+        if (user == null) {
+            throw new BaseException(Error.USER_NOT_FOUND);
+        }
+        List<CV> cvs = this.cvService.getAllCVs();
+        return ApiResponse.<List<CV>>builder()
+                .statusCode(200)
+                .message("Get all CVs successfully")
+                .data(cvs)
                 .build();
     }
 }

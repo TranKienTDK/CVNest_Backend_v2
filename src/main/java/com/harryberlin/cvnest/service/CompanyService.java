@@ -16,6 +16,7 @@ import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.mapper.company.CompanyMapper;
 import com.harryberlin.cvnest.repository.CompanyRepository;
 import com.harryberlin.cvnest.util.constant.Error;
+import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,16 +25,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -106,25 +104,25 @@ public class CompanyService {
 
     // ELASTIC SEARCH
     public Page<CompanyResponse> searchCompany(String name, String address, String industry, Pageable pageable) {
-        Page<String> companyIdsPage =
-                this.companyDocumentRepository.findCompanyDocumentByQuery(name, address, industry, pageable);
+        Specification<Company> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        if (companyIdsPage.isEmpty()) {
-            return Page.empty(pageable);
-        }
-        List<String> companyIds = companyIdsPage.getContent();
-        List<Company> companies = this.companyRepository.findAllByIdIn(companyIds);
+            if (name != null && !name.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+            }
+            if (address != null && !address.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("address")), "%" + address.toLowerCase() + "%"));
+            }
+            if (industry != null && !industry.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("industry")), industry.toLowerCase()));
+            }
 
-        Map<String, Company> companyMap = companies.stream()
-                .collect(Collectors.toMap(Company::getId, Function.identity()));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
-        List<CompanyResponse> companyResponses = companyIds.stream()
-                .map(companyMap::get)
-                .filter(Objects::nonNull)
-                .map(this.companyMapper::toResponse)
-                .collect(Collectors.toList());
+        Page<Company> companyPage = companyRepository.findAll(spec, pageable);
 
-        return new PageImpl<>(companyResponses, pageable, companyIdsPage.getTotalElements());
+        return companyPage.map(companyMapper::toResponse);
     }
 
     // IMPORT DATA FROM JSON
@@ -135,11 +133,24 @@ public class CompanyService {
         List<CompanyCreateRequest> companyRequestList = this.objectMapper.readValue(resource.getFile(),
                 new TypeReference<List<CompanyCreateRequest>>() {});
 
-        List<Company> companyList = companyRequestList.stream()
+        Set<String> existingCompanyNames = new HashSet<>();
+        List<CompanyCreateRequest> filteredRequestList = companyRequestList.stream()
+                .filter(companyRequest -> existingCompanyNames.add(companyRequest.getName()))
+                .toList();
+
+        List<Company> companyList = filteredRequestList.stream()
                 .map(this.companyMapper::toEntity)
                 .toList();
 
-        List<Company> savedCompanies = this.companyRepository.saveAll(companyList);
+        List<Company> existingCompanies = this.companyRepository.findAllByNameIn(
+                companyList.stream().map(Company::getName).collect(Collectors.toList()));
+
+        List<Company> newCompanies = companyList.stream()
+                .filter(company -> existingCompanies.stream().noneMatch(existing -> existing.getName().equals(company.getName())))
+                .collect(Collectors.toList());
+
+        List<Company> savedCompanies = this.companyRepository.saveAll(newCompanies);
+
         List<CreateCompanyEvent> events = savedCompanies.stream()
                 .map(company -> new CreateCompanyEvent(company.getId()))
                 .toList();

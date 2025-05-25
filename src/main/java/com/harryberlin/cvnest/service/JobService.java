@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.harryberlin.cvnest.domain.Company;
 import com.harryberlin.cvnest.domain.Job;
 import com.harryberlin.cvnest.domain.Skill;
+import com.harryberlin.cvnest.domain.User;
 import com.harryberlin.cvnest.dto.request.JobCreateImportRequest;
 import com.harryberlin.cvnest.dto.request.JobCreateRequest;
 import com.harryberlin.cvnest.dto.request.JobUpdateRequest;
@@ -20,6 +21,7 @@ import com.harryberlin.cvnest.mapper.job.JobMapper;
 import com.harryberlin.cvnest.repository.CompanyRepository;
 import com.harryberlin.cvnest.repository.JobRepository;
 import com.harryberlin.cvnest.repository.SkillRepository;
+import com.harryberlin.cvnest.repository.UserRepository;
 import com.harryberlin.cvnest.util.constant.Error;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class JobService {
     SkillRepository skillRepository;
     JobRepository jobRepository;
     CompanyRepository companyRepository;
+    UserRepository userRepository;
     JobDocumentRepositoryCustomImpl jobDocumentRepositoryCustom;
 
     private final ObjectMapper objectMapper;
@@ -85,7 +88,12 @@ public class JobService {
         if (this.jobRepository.findById(id).isEmpty()) {
             throw new BaseException(Error.JOB_NOT_FOUND);
         }
-        return this.jobMapper.toResponse(this.jobRepository.findById(id).get());
+        Job job = this.jobRepository.findById(id).get();
+        JobResponse response = this.jobMapper.toResponse(job);
+        response.setSkillNames(job.getSkills().stream()
+                .map(Skill::getName)
+                .collect(Collectors.toList()));
+        return response;
     }
 
     public JobResponse updateJob(JobUpdateRequest request) {
@@ -94,6 +102,8 @@ public class JobService {
 
         jobDB.setTitle(request.getTitle());
         jobDB.setContract(request.getContract());
+        jobDB.setJobType(request.getJobType());
+        jobDB.setLevel(request.getLevel());
         jobDB.setDescription(request.getDescription());
         jobDB.setStartDate(request.getStartDate());
         jobDB.setEndDate(request.getEndDate());
@@ -169,21 +179,30 @@ public class JobService {
 
         List<String> jobIds = new ArrayList<>();
 
-        for (JobCreateImportRequest request : jobRequestList) {
-            // Check company exists or not
-            Company company = companyRepository.findById(request.getCompanyId())
+        List<Company> companies = companyRepository.findAll();
+        if (companies.isEmpty()) {
+            throw new BaseException(Error.COMPANY_NOT_FOUND);
+        }
+
+        int companyCount = companies.size();
+
+        for (int i = 0; i < jobRequestList.size(); i++) {
+            JobCreateImportRequest request = jobRequestList.get(i);
+
+            Company company = companies.get(i % companyCount);
+            request.setCompanyId(company.getId());
+
+            Company companyFromDb = companyRepository.findById(request.getCompanyId())
                     .orElseThrow(() -> new BaseException(Error.COMPANY_NOT_FOUND));
 
-            // Insert skills if not exist
             List<Skill> skills = request.getSkills().stream()
                     .map(skillName -> this.skillRepository.findByName(skillName)
                             .orElseGet(() -> this.skillRepository.save(new Skill(skillName))))
                     .toList();
 
-            // Create job and save to DB
             Job job = this.jobMapper.toEntityImport(request);
             job.setSkills(skills);
-            job.setCompany(company);
+            job.setCompany(companyFromDb);
             this.jobRepository.save(job);
             jobIds.add(job.getId());
         }
@@ -222,6 +241,39 @@ public class JobService {
         }
 
         return String.join("\n", seen);
+    }
+
+    public List<JobResponse> getListJobByCompanyId(String companyId) {
+        if (this.companyRepository.findById(companyId).isEmpty()) {
+            throw new BaseException(Error.COMPANY_NOT_FOUND);
+        }
+        List<Job> jobs = this.jobRepository.findByCompanyId(companyId);
+        return jobs.stream()
+                .map(job -> {
+                    JobResponse response = this.jobMapper.toResponse(job);
+                    response.setSkillNames(job.getSkills().stream()
+                            .map(Skill::getName)
+                            .collect(Collectors.toList()));
+                    return response;
+                })
+                .toList();
+    }
+
+    public List<JobResponse> getListJobByHR(String hrId) {
+        User hrUser = this.userRepository.findById(hrId).orElseThrow(
+                () -> new BaseException(Error.USER_NOT_FOUND));
+
+        String companyId = hrUser.getCompany().getId();
+        List<Job> jobs = this.jobRepository.findByCompanyId(companyId);
+        return jobs.stream()
+                .map(job -> {
+                    JobResponse response = this.jobMapper.toResponse(job);
+                    response.setSkillNames(job.getSkills().stream()
+                            .map(Skill::getName)
+                            .collect(Collectors.toList()));
+                    return response;
+                })
+                .toList();
     }
 
 }

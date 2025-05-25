@@ -22,7 +22,6 @@ public class JobResponse {
     String level;
     LocalDate startDate;
     LocalDate endDate;
-    boolean isActive;
     String experienceYear;
     String description;
     BigDecimal salary;

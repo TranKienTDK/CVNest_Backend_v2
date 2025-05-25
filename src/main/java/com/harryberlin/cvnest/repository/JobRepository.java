@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface JobRepository extends JpaRepository<Job, String> {
     List<Job> findAllByIdIn(List<String> ids);
+    List<Job> findByCompanyId(String companyId);
 }
