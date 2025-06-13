@@ -1,6 +1,15 @@
 package com.harryberlin.cvnest.service;
 
+import com.harryberlin.cvnest.domain.Company;
+import com.harryberlin.cvnest.domain.Job;
 import com.harryberlin.cvnest.domain.User;
+import com.harryberlin.cvnest.dto.request.CandidateOutreachRequest;
+import com.harryberlin.cvnest.dto.request.SendOutreachEmailActualRequest;
+import com.harryberlin.cvnest.dto.response.EmailPreviewResponse;
+import com.harryberlin.cvnest.exception.BaseException;
+import com.harryberlin.cvnest.repository.JobRepository;
+import com.harryberlin.cvnest.repository.UserRepository;
+import com.harryberlin.cvnest.util.constant.Error;
 import com.harryberlin.cvnest.util.helper.CodeGenerator;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -14,7 +23,12 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -26,7 +40,12 @@ public class EmailService {
     private String fromAddress;
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SpringTemplateEngine templateEngine;
     private final JavaMailSender mailSender;
+    private final JobRepository jobRepository;
+    private final UserRepository userRepository;
+
+    private static final String OUTREACH_TEMPLATE_NAME = "candidate-outreach-template";
 
     @Async
     public void sendResetPasswordEmail(User user) throws MessagingException {
@@ -79,6 +98,68 @@ public class EmailService {
         }
 
         mailSender.send(message);
+    }
+
+    public EmailPreviewResponse prepareEmailPreview(CandidateOutreachRequest request,
+                                                    String hrEmail) throws MessagingException {
+        Job job = this.jobRepository.findById(request.getJobId()).orElseThrow(
+                () -> new BaseException(Error.JOB_NOT_FOUND)
+        );
+
+        Company company = job.getCompany();
+        if (company == null) {
+            throw new BaseException(Error.COMPANY_NOT_FOUND);
+        }
+
+        User hrUser = this.userRepository.findByEmail(hrEmail);
+        if (hrUser == null) {
+            throw new BaseException(Error.USER_NOT_FOUND);
+        }
+
+        Map<String, Object> templateModel = new HashMap<>();
+        templateModel.put("candidateName", request.getCandidateName() != null ?
+                request.getCandidateName() : "Ứng viên tiềm năng");
+        templateModel.put("hrName", hrUser.getUsername());
+
+        templateModel.put("companyName", company.getName());
+        templateModel.put("companyAvatar", company.getAvatar());
+        templateModel.put("companyAddress", company.getAddress());
+        templateModel.put("companyWebsite", company.getWebsite());
+
+        templateModel.put("job", job);
+
+        String subject = "Cơ hội việc làm: " + job.getTitle() + " tại " + company.getName();
+        templateModel.put("subject", subject);
+
+        String emailBody = buildEmailContent(OUTREACH_TEMPLATE_NAME, templateModel);
+
+        return EmailPreviewResponse.builder()
+                .to(request.getCandidateEmail())
+                .subject(subject)
+                .body(emailBody)
+                .build();
+    }
+
+    public void sendPreparedOutreachEmail(SendOutreachEmailActualRequest request) throws MessagingException {
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage,
+                MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                StandardCharsets.UTF_8.name());
+
+        helper.setFrom(fromAddress);
+        helper.setTo(request.getTo());
+        helper.setSubject(request.getSubject());
+        helper.setText(request.getHtmlBody(), true);
+
+        mailSender.send(mimeMessage);
+        log.info("Outreach email sent successfully to: {} with subject: {}",
+                request.getTo(), request.getSubject());
+    }
+
+    private String buildEmailContent(String templateName, Map<String, Object> templateModel) {
+        Context context = new Context();
+        context.setVariables(templateModel);
+        return templateEngine.process(templateName, context);
     }
 
 }

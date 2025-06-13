@@ -25,8 +25,8 @@ public class EvaluationService {
     private final JobRepository jobRepository;
     private final RestTemplate restTemplate;
 
-    private static final String FASTAPI_URL = "http://localhost:8000/sync_feedback";
-
+    private static final String FASTAPI_URL = "http://localhost:8000/sync_feedback";    
+    
     public Evaluation createEvaluation(Evaluation evaluation) {
         if (!cvRepository.existsById(evaluation.getCvId())) {
             throw new BaseException(Error.CV_NOT_FOUND);
@@ -34,6 +34,11 @@ public class EvaluationService {
         if (!jobRepository.existsById(evaluation.getJobId())) {
             throw new BaseException(Error.JOB_NOT_FOUND);
         }
+        
+        var cv = cvRepository.findById(evaluation.getCvId())
+                .orElseThrow(() -> new BaseException(Error.CV_NOT_FOUND));
+        evaluation.setUpdatedAt(cv.getUpdatedAt());
+        
         return evaluationRepository.save(evaluation);
     }
 

@@ -5,6 +5,8 @@ import com.harryberlin.cvnest.domain.CV;
 import com.harryberlin.cvnest.domain.Job;
 import com.harryberlin.cvnest.domain.User;
 import com.harryberlin.cvnest.event.notification.ApplySummittedEvent;
+import com.harryberlin.cvnest.event.notification.ApplyApprovedEvent;
+import com.harryberlin.cvnest.event.notification.ApplyRejectedEvent;
 import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.repository.ApplyRepository;
 import com.harryberlin.cvnest.repository.CVRepository;
@@ -77,8 +79,7 @@ public class ApplyService {
         List<String> cvIds = userCVs.stream().map(CV::getId).toList();
         return this.applyRepository.findByCvIdIn(cvIds);
     }
-    
-    @Transactional
+      @Transactional
     public void updateApplicationStatus(String applyId, CVStatusEnum status) {
         Optional<Apply> applyOptional = this.applyRepository.findById(applyId);
         if (applyOptional.isEmpty()) {
@@ -87,8 +88,25 @@ public class ApplyService {
         }
         
         Apply apply = applyOptional.get();
+        
+        // Lấy thông tin CV và User
+        Optional<CV> cvOptional = this.cvRepository.findById(apply.getCvId());
+        if (cvOptional.isEmpty()) {
+            log.error("CV with ID {} not found", apply.getCvId());
+            throw new BaseException(Error.CV_NOT_FOUND);
+        }
+        CV cv = cvOptional.get();
+        String userId = cv.getUser().getId();
+        
         apply.setStatus(status);
         this.applyRepository.save(apply);
+        
+        // Gửi thông báo dựa trên trạng thái
+        if (status == CVStatusEnum.APPROVED) {
+            this.eventPublisher.publishEvent(new ApplyApprovedEvent(applyId, userId, apply.getJobId(), apply.getCvId()));
+        } else if (status == CVStatusEnum.REJECTED) {
+            this.eventPublisher.publishEvent(new ApplyRejectedEvent(applyId, userId, apply.getJobId(), apply.getCvId()));
+        }
     }
 
     public List<Apply> getApplicationsByHR(String hrId) {

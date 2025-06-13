@@ -3,6 +3,7 @@ package com.harryberlin.cvnest.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -22,10 +23,15 @@ public class Evaluation {
     Double score;
 
     @Lob
-    private String explanation;
-
+    private String explanation; 
+    
     @ElementCollection
-    List<String> skills;
+    List<String> skills;    String feedback;
+    
+    private String recommendedAction;
+    
+    private String actionReason;
 
-    String feedback;
+    // Thời gian cập nhật của CV
+    private LocalDateTime updatedAt;
 }

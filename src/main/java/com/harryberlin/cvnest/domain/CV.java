@@ -32,6 +32,8 @@ public class CV {
     @Lob
     String additionalInfo;
 
+    boolean isDefault;
+
     @CreationTimestamp
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime createdAt;

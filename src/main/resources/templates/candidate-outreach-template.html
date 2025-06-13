@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${subject}">Lời mời tìm hiểu cơ hội việc làm</title>
+  <style type="text/css">
+    /* Color Palette */
+    .first-color  { background: #e4f1fe; }
+    .second-color { background: #8dc6ff; }
+    .third-color  { background: #22313f; color: #ffffff; }
+    .fourth-color { background: #34495e; color: #ffffff; }
+
+    /* Reset & Base */
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table { border-collapse:collapse !important; }
+    body { margin:0; padding:0; width:100% !important; font-family: Arial, sans-serif; background-color: #f4f4f4; }
+    img { border:0; outline:none; text-decoration:none; display:block; max-width:100%; }
+
+    /* Fade-in animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animated { animation: fadeIn 0.8s ease-out; }
+
+    /* Wrapper */
+    .wrapper { width:100%; table-layout:fixed; padding: 40px 0; }
+    .main { background: #fff; margin:0 auto; max-width:600px; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+
+    /* Header */
+    .header { text-align:center; padding:20px; position: relative; }
+    .header .logo {
+      width: 120px; height: auto;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      background: #fff;
+    }
+
+    /* Content */
+    .content { padding:30px; color:#333; line-height:1.6; }
+    .highlight { color: #007bff; font-weight:bold; }
+    h1 { margin-top:0; font-size:24px; }
+    h4 { margin-bottom:8px; color: #22313f; }
+
+    /* Button */
+    .btn {
+      display:inline-block;
+      padding:12px 24px;
+      margin:20px 0;
+      font-size:16px;
+      text-decoration:none;
+      border-radius:4px;
+      background-color:#28a745;
+      color:#fff;
+      transition: background-color .3s, transform .2s;
+    }
+    .btn:hover {
+      background-color:#218838;
+      transform: translateY(-2px);
+    }
+
+    /* Link underline animation */
+    .content a.inline-link {
+      color: #34495e;
+      position: relative;
+      text-decoration:none;
+    }
+    .content a.inline-link::after {
+      content: '';
+      position: absolute;
+      width: 0; height: 2px;
+      bottom: -2px; left: 0;
+      background: #34495e;
+      transition: width .3s;
+    }
+    .content a.inline-link:hover::after {
+      width: 100%;
+    }
+
+    /* Description box */
+    .desc-box {
+      margin:20px 0; padding:15px;
+      border-left:4px solid #8dc6ff; background:#e4f1fe;
+      border-radius:4px;
+    }
+
+    /* Footer */
+    .footer { padding:20px; text-align:center; font-size:12px; color:#777; background:#f4f4f4; }
+    .footer a { color:#8dc6ff; text-decoration:none; }
+    .footer a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+<center class="wrapper animated">
+  <table class="main">
+    <!-- Header with Logo -->
+    <tr>
+      <td class="header third-color">
+        <img th:src="${companyAvatar}" alt="Logo" class="logo">
+      </td>
+    </tr>
+
+    <!-- Body -->
+    <tr>
+      <td class="content first-color">
+        <h1 th:text="${subject}">Lời mời tìm hiểu cơ hội việc làm</h1>
+
+        <p>Kính gửi <span class="highlight" th:text="${candidateName}">Ứng viên</span>,</p>
+
+        <p>Tôi là <span class="highlight" th:text="${hrName}">[Tên HR]</span> từ Bộ phận Tuyển dụng của
+          <span class="highlight company-name" th:text="${companyName}">[Tên Công ty]</span>.</p>
+
+        <p>Chúng tôi rất ấn tượng với hồ sơ của bạn và tin rằng kinh nghiệm, kỹ năng của bạn rất phù hợp với công ty chúng tôi.</p>
+
+        <p>Hiện tại, chúng tôi đang có vị trí <span class="highlight job-title" th:text="${job.title}">[Tên Vị trí]</span>:</p>
+
+        <!-- Button to job detail -->
+        <p>
+          <a th:if="${job.id != null}"
+             th:href="'http://localhost:5173/jobs/' + ${job.id}"
+             class="btn">Xem chi tiết &amp; Ứng tuyển</a>
+        </p>
+
+        <!-- Short description -->
+        <div th:if="${job.description != null}" class="desc-box second-color">
+          <h4>Sơ lược về vị trí <span th:text="${job.title}"></span>:</h4>
+          <div th:utext="${#strings.abbreviate(job.description, 500)}"></div>
+        </div>
+
+        <p>Nếu bạn quan tâm hoặc có thắc mắc, hãy <a href="mailto:" class="inline-link">phản hồi email này</a> hoặc click vào nút trên để ứng tuyển trực tiếp.</p>
+
+        <p>Cảm ơn bạn đã dành thời gian. Rất mong sớm nhận được hồi âm từ bạn!</p>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td class="footer fourth-color">
+        <p>Trân trọng,<br/>
+          <span th:text="${hrName}">[Tên HR]</span><br/>
+          Bộ phận Tuyển dụng, <span th:text="${companyName}">[Tên Công ty]</span><br/>
+          <span th:if="${companyAddress != null}" th:text="${companyAddress}">[Địa chỉ Công ty]</span><br/>
+          <a th:if="${companyWebsite != null}"
+             th:href="${companyWebsite}"
+             th:text="${companyWebsite}">[Website Công ty]</a>
+        </p>
+      </td>
+    </tr>
+  </table>
+</center>
+</body>
+</html>

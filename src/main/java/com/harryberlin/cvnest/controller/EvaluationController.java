@@ -39,7 +39,7 @@ public class EvaluationController {
     }
 
     @GetMapping("/job/{jobId}")
-    @PreAuthorize("hasRole('HR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('HR') or hasAuthority('ADMIN')")
     public ApiResponse<List<Evaluation>> getEvaluationsByJob(@PathVariable String jobId) {
         List<Evaluation> evaluations = evaluationService.getEvaluationsByJob(jobId);
         return ApiResponse.<List<Evaluation>>builder()

@@ -4,6 +4,8 @@ import com.harryberlin.cvnest.domain.CV;
 import com.harryberlin.cvnest.domain.Job;
 import com.harryberlin.cvnest.domain.Notification;
 import com.harryberlin.cvnest.domain.User;
+import com.harryberlin.cvnest.event.notification.ApplyApprovedEvent;
+import com.harryberlin.cvnest.event.notification.ApplyRejectedEvent;
 import com.harryberlin.cvnest.event.notification.ApplySummittedEvent;
 import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.repository.CVRepository;
@@ -40,12 +42,10 @@ public class ApplyEventListener {
         );
         CV cv = this.cvRepository.findById(event.getCvId()).orElseThrow(
                 () -> new BaseException(Error.CV_NOT_FOUND)
-        );
-
-        List<User> hrUsers = this.userRepository.findByCompanyAndRole(job.getCompany(), RoleEnum.HR);
+        );        List<User> hrUsers = this.userRepository.findByCompanyAndRole(job.getCompany(), RoleEnum.HR);
         for (User hr: hrUsers) {
             String content = String.format(
-                    "New application submitted from '%s' for job '%s'. CV: '%s'",
+                    "Đơn ứng tuyển mới từ '%s' cho vị trí '%s'. CV: '%s'",
                     user.getEmail(), job.getTitle(), cv.getCvName()
             );
 
@@ -64,6 +64,72 @@ public class ApplyEventListener {
                     notification
             );
         }
+    }
+
+    @EventListener
+    public void handleApplyApprovedEvent(ApplyApprovedEvent event) {
+        User user = this.userRepository.findById(event.getUserId()).orElseThrow(
+                () -> new BaseException(Error.USER_NOT_FOUND)
+        );
+        Job job = this.jobRepository.findById(event.getJobId()).orElseThrow(
+                () -> new BaseException(Error.JOB_NOT_FOUND)
+        );
+        CV cv = this.cvRepository.findById(event.getCvId()).orElseThrow(
+                () -> new BaseException(Error.CV_NOT_FOUND)
+        );
+
+        String content = String.format(
+                "Chúc mừng! Đơn ứng tuyển của bạn cho vị trí '%s' đã được chấp nhận. CV: '%s'",
+                job.getTitle(), cv.getCvName()
+        );
+
+        Notification notification = Notification.builder()
+                .receiveId(user.getId())
+                .applyId(event.getApplyId())
+                .content(content)
+                .createdAt(LocalDateTime.now())
+                .status(NotificationStatusEnum.UNREAD)
+                .build();
+        notificationRepository.save(notification);
+
+        messagingTemplate.convertAndSendToUser(
+                user.getId(),
+                "/topic/notifications",
+                notification
+        );
+    }
+
+    @EventListener
+    public void handleApplyRejectedEvent(ApplyRejectedEvent event) {
+        User user = this.userRepository.findById(event.getUserId()).orElseThrow(
+                () -> new BaseException(Error.USER_NOT_FOUND)
+        );
+        Job job = this.jobRepository.findById(event.getJobId()).orElseThrow(
+                () -> new BaseException(Error.JOB_NOT_FOUND)
+        );
+        CV cv = this.cvRepository.findById(event.getCvId()).orElseThrow(
+                () -> new BaseException(Error.CV_NOT_FOUND)
+        );
+
+        String content = String.format(
+                "Cảm ơn bạn đã quan tâm! Đơn ứng tuyển của bạn cho vị trí '%s' chưa phù hợp lần này. CV: '%s'",
+                job.getTitle(), cv.getCvName()
+        );
+
+        Notification notification = Notification.builder()
+                .receiveId(user.getId())
+                .applyId(event.getApplyId())
+                .content(content)
+                .createdAt(LocalDateTime.now())
+                .status(NotificationStatusEnum.UNREAD)
+                .build();
+        notificationRepository.save(notification);
+
+        messagingTemplate.convertAndSendToUser(
+                user.getId(),
+                "/topic/notifications",
+                notification
+        );
     }
 
 }

@@ -3,10 +3,14 @@ package com.harryberlin.cvnest.service;
 import com.harryberlin.cvnest.domain.*;
 import com.harryberlin.cvnest.dto.request.CVRequest;
 import com.harryberlin.cvnest.dto.request.CVRequest.*;
+import com.harryberlin.cvnest.dto.request.CVSetDefaultRequest;
 import com.harryberlin.cvnest.dto.request.CVUpdateRequest;
 import com.harryberlin.cvnest.dto.request.CVUpdateRequest.*;
+import com.harryberlin.cvnest.dto.request.SaveCVRequest;
 import com.harryberlin.cvnest.exception.BaseException;
 import com.harryberlin.cvnest.repository.CVRepository;
+import com.harryberlin.cvnest.repository.EvaluationRepository;
+import com.harryberlin.cvnest.repository.SavedCVRepository;
 import com.harryberlin.cvnest.repository.UserRepository;
 import com.harryberlin.cvnest.util.constant.Error;
 import com.harryberlin.cvnest.util.constant.RoleEnum;
@@ -28,7 +32,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CVService {
     private final CVRepository cvRepository;
+    private final EvaluationRepository evaluationRepository;
     private final UserRepository userRepository;
+    private final SavedCVRepository savedCVRepository;
 
     @Transactional
     public CV createCV(CVRequest request, User user) {
@@ -39,6 +45,7 @@ public class CVService {
                 .profile(request.getProfile())
                 .cvName(request.getCvName())
                 .additionalInfo(request.getAdditionalInfo())
+                .isDefault(false)
                 .user(user)
                 .build();
 
@@ -105,6 +112,57 @@ public class CVService {
         var user = cv.getUser();
         user.deleteCV(cv.getId());
         this.userRepository.save(user);
+    }
+
+    public void setDefaultCV(CVSetDefaultRequest request) {
+        if (this.cvRepository.findByDefaultIsTrue(request.getUserId()) != null) {
+            CV currentDefaultCV = this.cvRepository.findByDefaultIsTrue(request.getUserId());
+            currentDefaultCV.setDefault(false);
+
+            CV cv = this.cvRepository.findById(request.getCvId()).orElseThrow(
+                    () -> new BaseException(Error.CV_NOT_FOUND)
+            );
+            cv.setDefault(true);
+            this.cvRepository.save(cv);
+            this.cvRepository.save(currentDefaultCV);
+        } else {
+            CV cv = this.cvRepository.findById(request.getCvId()).orElseThrow(
+                    () -> new BaseException(Error.CV_NOT_FOUND)
+            );
+            cv.setDefault(true);
+            this.cvRepository.save(cv);
+        }
+    }
+
+    public void saveCVByHR(SaveCVRequest request) {
+        String hrId = request.getHrId();
+        this.userRepository.findById(hrId).orElseThrow(
+                () -> new BaseException(Error.USER_NOT_FOUND));
+        String cvId = request.getCvId();
+        if (this.cvRepository.findById(cvId).isEmpty()) {
+            throw new BaseException(Error.CV_NOT_FOUND);
+        }
+        if (this.savedCVRepository.findByCvIdAndHrId(cvId, hrId) != null) {
+            throw new BaseException(Error.CV_HAS_SAVED);
+        }
+        SavedCV savedCV = SavedCV.builder()
+                .hrId(hrId)
+                .cvId(cvId)
+                .build();
+        this.savedCVRepository.save(savedCV);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CV> getSavedCVByHr(String hrId) {
+        List<String> listCvId = this.savedCVRepository.getAllCvIdByHrId(hrId);
+        if (listCvId == null || listCvId.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<CV> savedCVList = this.cvRepository.findAllByIdIn(listCvId);
+        if (savedCVList == null || savedCVList.isEmpty()) {
+            throw new BaseException(Error.CV_NOT_FOUND);
+        }
+        return savedCVList;
     }
 
     private void buildCVRelationships(CV cv, CVRequest request) {
@@ -413,16 +471,33 @@ public class CVService {
                         .cv(cv)
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    private void updateConsultants(CV cv, List<ConsultantUpdateRequest> requests) {
+    }    private void updateConsultants(CV cv, List<ConsultantUpdateRequest> requests) {
         var updateConsultantModal = new UpdateConsultantModal(cv.getConsultants(), requests, cv);
         cv.setConsultants(updateConsultantModal.handleRequests());
-    }
-
-    public List<CV> getAllCVs() {
-        log.info("Retrieving all CVs");
-        return this.cvRepository.findAll();
+    }    public List<CV> getAllCVs(String jobId) {
+        log.info("Retrieving all CVs with evaluation filtering logic for job: {}", jobId);
+        
+        List<CV> defaultCVs = this.cvRepository.findByIsDefaultTrue();
+        
+        return defaultCVs.stream()
+                .filter(cv -> {
+                    var evaluation = evaluationRepository.findByCvIdAndJobId(cv.getId(), jobId);
+                    
+                    if (evaluation.isEmpty()) {
+                        log.debug("CV {} not found in evaluations for job {}, including in results", cv.getId(), jobId);
+                        return true;
+                    } else {
+                        boolean hasUpdatedAtChanged = !cv.getUpdatedAt().equals(evaluation.get().getUpdatedAt());
+                        if (hasUpdatedAtChanged) {
+                            log.debug("CV {} has different updatedAt times for job {} (CV: {}, Evaluation: {}), including in results", 
+                                    cv.getId(), jobId, cv.getUpdatedAt(), evaluation.get().getUpdatedAt());
+                        } else {
+                            log.debug("CV {} has same updatedAt time for job {}, excluding from results", cv.getId(), jobId);
+                        }
+                        return hasUpdatedAtChanged;
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     private record UpdateCVModal<T>(List<T> addItems, Map<String, T> updateItems) {

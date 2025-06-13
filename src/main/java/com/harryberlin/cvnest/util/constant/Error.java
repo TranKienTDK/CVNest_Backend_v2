@@ -19,6 +19,7 @@ public class Error {
     public static final String CV_NOT_FOUND = "CV not found";
     public static final String NOT_AUTHORIZED = "Not authorize";
     public static final String CV_NOT_BELONG_TO_USER = "CV does not belong to user";
+    public static final String CV_HAS_SAVED = "CV has saved";
 
     public static final String APPLY_NOT_FOUND = "Apply not found";
 
